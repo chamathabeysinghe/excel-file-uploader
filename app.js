@@ -1,6 +1,35 @@
 const express = require("express");
 const expressLayouts = require("express-ejs-layouts");
 const path = require("path");
+const multer = require('multer');
+
+const storage = multer.diskStorage({
+  destination: './uploads/',
+  filename: (req, file, cb) => {
+    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  }
+});
+function checkFileType(file, cb) {
+  const filetypes = /csv/;
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = filetypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb('Error: CSV Files Only!');
+  }
+}
+
+// Initialize upload
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 1000000 }, // limit file size to 1MB
+  fileFilter: (req, file, cb) => {
+    checkFileType(file, cb);
+  }
+}).single('csvfile'); // 'csvfile' is the name attribute of the input field in the HTML form
+
 
 const mongoose = require('mongoose');
 
@@ -85,6 +114,39 @@ app.get("/crud/products", (req, res) => {
     layout: path.join(__dirname, "/layouts/dashboard"),
     footer: false,
     products,
+  });
+});
+
+// Handle file upload
+app.post('/crud/products', (req, res) => {
+  upload(req, res, (err) => {
+    if (err) {
+      console.log('error..........')
+      console.log('error..........')
+      console.log('error..........')
+      console.log('error..........')
+      console.log('error..........')
+      console.log(err)
+      return res.redirect("back")
+    } else {
+      if (req.file == undefined) {
+        console.log('error..........')
+        console.log('error..........')
+        console.log('error..........')
+        console.log('error..........')
+        console.log('error..........')
+        return res.redirect("back")
+      } else {
+        console.log(req.file.filename)
+        console.log(req.file.filename)
+        console.log(req.file.filename)
+        console.log(req.file.filename)
+        console.log(req.file.filename)
+        // res.send(`<h1>File Uploaded: ${req.file.filename}</h1>`);
+        return res.redirect("back")
+
+      }
+    }
   });
 });
 

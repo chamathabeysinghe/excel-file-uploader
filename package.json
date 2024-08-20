@@ -48,6 +48,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "csv-parser": "^3.0.0",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
     "express-ejs-layouts": "^2.5.1",
