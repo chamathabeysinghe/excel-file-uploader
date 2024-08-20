@@ -2,6 +2,18 @@ const express = require("express");
 const expressLayouts = require("express-ejs-layouts");
 const path = require("path");
 
+const mongoose = require('mongoose');
+
+// Replace the following with your MongoDB connection string
+const mongoURI = 'mongodb://localhost:27017/excel_file_upload';
+
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => console.error('MongoDB connection error:', err));
+
 const app = express();
 
 // Static Files
@@ -146,5 +158,5 @@ app.get("/playground/stacked", (req, res) => {
 });
 
 app.listen(3001, () => {
-  console.log("Server running on port 3000");
+  console.log("Server running on port 3001");
 });
