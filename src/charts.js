@@ -169,11 +169,12 @@ if (document.getElementById('main-chart')) {
 
 // Example: Get a specific parameter value
 	const paramValue = urlParams.get('email'); // Replace 'paramName' with the name of your query parameter
-	console.log(paramValue)
-	console.log(paramValue)
-	console.log(paramValue)
-	console.log(paramValue)
-	console.log(paramValue)
+	if (paramValue) {
+		document.getElementById("value-of-search").innerText = paramValue
+	} else {
+		document.getElementById("value-of-search").innerText = ""
+	}
+	document.getElementById("search-har-hidden").classList.remove("hidden")
 
 
 	getMainChartOptions(7, paramValue)
