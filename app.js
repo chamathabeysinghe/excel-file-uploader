@@ -7,13 +7,12 @@ const Record = require('./models/record.model'); // Import the Record model
 const User = require('./models/user.model'); // Import the Record model
 const fs = require('fs');
 const session = require('express-session');
-
 const moment = require('moment'); // Import moment
 const passport = require('passport');
 const flash = require('connect-flash');
 const initializePassport = require('./passport-config');
 const isAuthenticated = require('./middleware/auth');
-
+const mongoose = require('mongoose');
 
 
 const storage = multer.diskStorage({
@@ -44,7 +43,6 @@ const upload = multer({
 }).single('csvfile'); // 'csvfile' is the name attribute of the input field in the HTML form
 
 
-const mongoose = require('mongoose');
 
 // Replace the following with your MongoDB connection string
 const mongoURI = 'mongodb://localhost:27017/excel_file_upload';
@@ -154,11 +152,6 @@ app.use((req, res, next) => {
 
 app.get("/", isAuthenticated, (req, res) => {
   getMonthlyStatistics().then(results => {
-    console.log('**********')
-    console.log('**********')
-    console.log('**********')
-    console.log('**********')
-    console.log(results)
     res.render("index", {
       stats: results,
       layout: path.join(__dirname, "/layouts/dashboard"),
@@ -166,29 +159,6 @@ app.get("/", isAuthenticated, (req, res) => {
     });
   })
 
-});
-
-app.get("/settings", (req, res) => {
-  res.render("settings", {
-    layout: path.join(__dirname, "/layouts/dashboard"),
-    footer: true,
-  });
-});
-
-app.get("/authentication/forgot-password", (req, res) => {
-  res.render("authentication/forgot-password", {
-    layout: path.join(__dirname, "/layouts/main"),
-    navigation: false,
-    footer: false,
-  });
-});
-
-app.get("/authentication/profile-lock", (req, res) => {
-  res.render("authentication/profile-lock", {
-    layout: path.join(__dirname, "/layouts/main"),
-    navigation: false,
-    footer: false,
-  });
 });
 
 app.get("/authentication/sign-in", (req, res) => {
@@ -214,14 +184,6 @@ app.post('/add-user', async (req, res, next) => {
     const user = new User({ username, password, full_name: firstname+" "+lastname });
     await user.save();
     return res.redirect("back")
-    // Authenticate the user using passport's login method
-    // req.login(user, (err) => {
-    //   if (err) {
-    //     return next(err);
-    //   }
-    //   // Redirect to the dashboard or another page after successful login
-    //   return res.redirect('/dashboard');
-    // });
   } catch (err) {
     res.status(500).send('Error creating user: ' + err.message);
   }
@@ -234,22 +196,6 @@ app.get('/logout', (req, res, next) => {
       return next(err);
     }
     res.redirect('/authentication/sign-in'); // Redirect to the login page after logout
-  });
-});
-
-app.get("/authentication/sign-up", (req, res) => {
-  res.render("authentication/sign-up", {
-    layout: path.join(__dirname, "/layouts/main"),
-    navigation: false,
-    footer: false,
-  });
-});
-
-app.get("/authentication/reset-password", (req, res) => {
-  res.render("authentication/reset-password", {
-    layout: path.join(__dirname, "/layouts/main"),
-    navigation: false,
-    footer: false,
   });
 });
 
@@ -423,72 +369,11 @@ app.get('/user-delete/:id', isAuthenticated, async (req, res) => {
     if (!deletedUser) {
       return res.status(404).redirect("back");
     }
-
     res.status(200).redirect("back");
   } catch (err) {
     console.error('Error deleting user:', err);
     res.status(500).redirect("back");
   }
-});
-
-app.get("/layouts/stacked", (req, res) => {
-  res.render("layouts/stacked", {
-    layout: path.join(__dirname, "/layouts/stacked-layout"),
-    footer: true,
-  });
-});
-
-app.get("/layouts/sidebar", (req, res) => {
-  res.render("layouts/sidebar", {
-    layout: path.join(__dirname, "/layouts/dashboard"),
-    footer: true,
-  });
-});
-
-app.get("/pages/404", (req, res) => {
-  res.render("pages/404", {
-    layout: path.join(__dirname, "/layouts/main"),
-    navigation: false,
-    footer: false,
-  });
-});
-
-app.get("/pages/500", (req, res) => {
-  res.render("pages/500", {
-    layout: path.join(__dirname, "/layouts/main"),
-    navigation: false,
-    footer: false,
-  });
-});
-
-app.get("/pages/maintenance", (req, res) => {
-  res.render("pages/maintenance", {
-    layout: path.join(__dirname, "/layouts/main"),
-    navigation: false,
-    footer: false,
-  });
-});
-
-app.get("/pages/pricing", (req, res) => {
-  res.render("pages/pricing", {
-    layout: path.join(__dirname, "/layouts/main"),
-    navigation: true,
-    footer: false,
-  });
-});
-
-app.get("/playground/sidebar", (req, res) => {
-  res.render("playground/sidebar", {
-    layout: path.join(__dirname, "/layouts/dashboard"),
-    footer: true,
-  });
-});
-
-app.get("/playground/stacked", (req, res) => {
-  res.render("playground/stacked", {
-    layout: path.join(__dirname, "/layouts/stacked-layout"),
-    footer: true,
-  });
 });
 
 app.listen(3001, () => {
