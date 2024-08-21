@@ -1,8 +1,22 @@
 import ApexCharts from 'apexcharts';
+import {data} from "autoprefixer";
 
-const getMainChartOptions = () => {
+
+async function loadData(days) {
+	const response = await fetch(`/api/record-counts/${days}`);
+	const data = await response.json();
+	const labels = data.map(item => item.date);
+	const counts = data.map(item => item.count);
+	return { labels, counts };
+}
+
+// Load data for the last 7 days by default when the page loads
+
+
+
+async function getMainChartOptions(days) {
 	let mainChartColors = {}
-
+	const { labels, counts } = await loadData(days);
 	if (document.documentElement.classList.contains('dark')) {
 		mainChartColors = {
 			borderColor: '#374151',
@@ -57,15 +71,15 @@ const getMainChartOptions = () => {
 		},
 		series: [
 			{
-				name: 'Revenue',
-				data: [6356, 6218, 6156, 6526, 6356, 6256, 6056],
+				name: 'Views',
+				data: counts,
 				color: '#1A56DB'
 			},
-			{
-				name: 'Revenue (previous period)',
-				data: [6556, 6725, 6424, 6356, 6586, 6756, 6616],
-				color: '#FDBA8C'
-			}
+			// {
+			// 	name: 'Revenue (previous period)',
+			// 	data: [6556, 6725, 6424, 6356, 6586, 6756, 6616],
+			// 	color: '#FDBA8C'
+			// }
 		],
 		markers: {
 			size: 5,
@@ -76,7 +90,7 @@ const getMainChartOptions = () => {
 			}
 		},
 		xaxis: {
-			categories: ['01 Feb', '02 Feb', '03 Feb', '04 Feb', '05 Feb', '06 Feb', '07 Feb'],
+			categories: labels,
 			labels: {
 				style: {
 					colors: [mainChartColors.labelColor],
@@ -108,7 +122,7 @@ const getMainChartOptions = () => {
 					fontWeight: 500,
 				},
 				formatter: function (value) {
-					return '$' + value;
+					return  value;
 				}
 			},
 		},
@@ -138,14 +152,53 @@ const getMainChartOptions = () => {
 	};
 }
 
-if (document.getElementById('main-chart')) {
-	const chart = new ApexCharts(document.getElementById('main-chart'), getMainChartOptions());
-	chart.render();
 
-	// init again when toggling dark mode
-	document.addEventListener('dark-mode', function () {
-		chart.updateOptions(getMainChartOptions());
-	});
+
+
+if (document.getElementById('main-chart')) {
+	const urlParams = new URLSearchParams(window.location.search);
+
+// Example: Get a specific parameter value
+	const paramValue = urlParams.get('email'); // Replace 'paramName' with the name of your query parameter
+	console.log(paramValue)
+	console.log(paramValue)
+	console.log(paramValue)
+	console.log(paramValue)
+	console.log(paramValue)
+
+
+	getMainChartOptions(7)
+		.then(result=> {
+			const chart = new ApexCharts(document.getElementById('main-chart'), result);
+			chart.render();
+			// init again when toggling dark mode
+			document.addEventListener('dark-mode', function () {
+				getMainChartOptions(7).then(result2 => {
+					chart.updateOptions(result2);
+				})
+			});
+			document.getElementById('last7days').addEventListener('click', function() {
+				getMainChartOptions(7).then(result2 => {
+					chart.updateOptions(result2);
+				})
+				document.getElementById('daterangespan').textContent = "Last 7 days";
+
+			});
+			document.getElementById('last30days').addEventListener('click', function() {
+				getMainChartOptions(30).then(result2 => {
+					chart.updateOptions(result2);
+				})
+				document.getElementById('daterangespan').textContent = "Last 30 days";
+
+			});
+			document.getElementById('last90days').addEventListener('click', function() {
+				getMainChartOptions(90).then(result2 => {
+					chart.updateOptions(result2);
+				})
+				document.getElementById('daterangespan').textContent = "Last 90 days";
+
+			});
+		})
 }
 
 if (document.getElementById('new-products-chart')) {

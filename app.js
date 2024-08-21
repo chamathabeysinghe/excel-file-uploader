@@ -2,6 +2,10 @@ const express = require("express");
 const expressLayouts = require("express-ejs-layouts");
 const path = require("path");
 const multer = require('multer');
+const csv = require('csv-parser');
+const Record = require('./models/record.model'); // Import the Record model
+const fs = require('fs');
+const moment = require('moment'); // Import moment
 
 const storage = multer.diskStorage({
   destination: './uploads/',
@@ -117,6 +121,17 @@ app.get("/crud/products", (req, res) => {
   });
 });
 
+function parseDate(dateString, postDate) {
+  if (dateString.includes('Today')) {
+    return moment(postDate).startOf('day').add(moment.duration(dateString.split('at')[1].trim())).toDate();
+  } else if (dateString.includes('Yesterday')) {
+    return moment(postDate).subtract(1, 'day').startOf('day').add(moment.duration(dateString.split('at')[1].trim())).toDate();
+  } else {
+    return moment(dateString, ['YYYY/MM/DD', 'YYYY-MM-DD', 'MM/DD/YYYY', 'DD/MM/YYYY']).toDate();
+  }
+}
+
+
 // Handle file upload
 app.post('/crud/products', (req, res) => {
   upload(req, res, (err) => {
@@ -143,11 +158,99 @@ app.post('/crud/products', (req, res) => {
         console.log(req.file.filename)
         console.log(req.file.filename)
         // res.send(`<h1>File Uploaded: ${req.file.filename}</h1>`);
-        return res.redirect("back")
+        const filePath = `./uploads/${req.file.filename}`;
+        const records = [];
+        console.log(req.file.originalname)
+        console.log(req.file.originalname)
+        console.log(req.file.originalname)
+        console.log(req.file.originalname)
+        var postDate = req.file.originalname.split("-")[0]
+        var [month, day, year] = postDate.split("_");
+        postDate = new Date(`${year}-${month}-${day}`);
+        console.log("dslkafj ladsjfasd")
+        console.log(postDate)
+        fs.createReadStream(filePath)
+          .pipe(csv())
+          .on('data', (row) => {
+            // Push each record to the records array
+            var seenTime = parseDate(row.Time, postDate)
+            console.log(seenTime)
+            records.push({
+              name: row.Name,
+              post_date: postDate, // Assuming "Time" column contains dates
+              seen_time: seenTime // Assuming you want to set the seen_time to the current date/time
+            });
+          })
+          .on('end', () => {
+            // Insert records into the database
+            Record.insertMany(records)
+              .then(() => {
+                console.log('CSV file successfully processed and records inserted into the database');
+                return res.redirect("back")
+              })
+              .catch((err) => {
+                console.error('Error inserting records:', err);
+                return res.redirect("back")
+              });
 
+            // Optionally, delete the uploaded file after processing
+            fs.unlinkSync(filePath);
+          });
       }
     }
   });
+});
+
+// Function to get data for the last 7 or 30 days
+async function getRecordCounts(days) {
+  const startDate = moment().subtract(days, 'days').startOf('day');
+  const endDate = moment().endOf('day');
+
+  // Step 1: Get the aggregated record counts from the database
+  const recordCounts = await Record.aggregate([
+    {
+      $match: {
+        post_date: { $gte: startDate.toDate() }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: "%Y-%m-%d", date: "$post_date" }
+        },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { _id: 1 } // Sort by date
+    }
+  ]);
+
+  // Step 2: Generate a complete list of dates within the range
+  const dateMap = new Map();
+
+  for (let m = startDate.clone(); m.isBefore(endDate); m.add(1, 'days')) {
+    dateMap.set(m.format('YYYY-MM-DD'), 0); // Initialize each date with 0
+  }
+
+  // Step 3: Fill in the dateMap with actual counts from the aggregation
+  recordCounts.forEach(record => {
+    dateMap.set(record._id, record.count);
+  });
+
+  // Step 4: Convert the dateMap back to an array
+  const completeRecordCounts = Array.from(dateMap, ([date, count]) => ({
+    date,
+    count
+  }));
+
+  return completeRecordCounts;
+}
+
+app.get('/api/record-counts/:days', async (req, res) => {
+  const days = parseInt(req.params.days, 10);
+  const data = await getRecordCounts(days);
+  res.json(data);
 });
 
 app.get("/crud/users", (req, res) => {
