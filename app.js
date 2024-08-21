@@ -195,39 +195,16 @@ function parseDate(dateString, postDate) {
 app.post('/crud/products', (req, res) => {
   upload(req, res, (err) => {
     if (err) {
-      console.log('error..........')
-      console.log('error..........')
-      console.log('error..........')
-      console.log('error..........')
-      console.log('error..........')
-      console.log(err)
       return res.redirect("back")
     } else {
       if (req.file == undefined) {
-        console.log('error..........')
-        console.log('error..........')
-        console.log('error..........')
-        console.log('error..........')
-        console.log('error..........')
         return res.redirect("back")
       } else {
-        console.log(req.file.filename)
-        console.log(req.file.filename)
-        console.log(req.file.filename)
-        console.log(req.file.filename)
-        console.log(req.file.filename)
-        // res.send(`<h1>File Uploaded: ${req.file.filename}</h1>`);
         const filePath = `./uploads/${req.file.filename}`;
         const records = [];
-        console.log(req.file.originalname)
-        console.log(req.file.originalname)
-        console.log(req.file.originalname)
-        console.log(req.file.originalname)
         var postDate = req.file.originalname.split("-")[0]
         var [month, day, year] = postDate.split("_");
         postDate = new Date(`${year}-${month}-${day}`);
-        console.log("dslkafj ladsjfasd")
-        console.log(postDate)
         fs.createReadStream(filePath)
           .pipe(csv())
           .on('data', (row) => {
