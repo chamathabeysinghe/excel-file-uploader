@@ -2,21 +2,30 @@ import ApexCharts from 'apexcharts';
 import {data} from "autoprefixer";
 
 
-async function loadData(days) {
-	const response = await fetch(`/api/record-counts/${days}`);
-	const data = await response.json();
-	const labels = data.map(item => item.date);
-	const counts = data.map(item => item.count);
-	return { labels, counts };
+async function loadData(days, paramValue) {
+	if (paramValue) {
+		const response = await fetch(`/api/record-counts/${days}/${paramValue}`);
+		const data = await response.json();
+		const labels = data.map(item => item.date);
+		const counts = data.map(item => item.count);
+		return { labels, counts };
+	} else {
+		const response = await fetch(`/api/record-counts/${days}`);
+		const data = await response.json();
+		const labels = data.map(item => item.date);
+		const counts = data.map(item => item.count);
+		return { labels, counts };
+	}
+
 }
 
 // Load data for the last 7 days by default when the page loads
 
 
 
-async function getMainChartOptions(days) {
+async function getMainChartOptions(days, paramValue) {
 	let mainChartColors = {}
-	const { labels, counts } = await loadData(days);
+	const { labels, counts } = await loadData(days, paramValue);
 	if (document.documentElement.classList.contains('dark')) {
 		mainChartColors = {
 			borderColor: '#374151',
@@ -167,32 +176,32 @@ if (document.getElementById('main-chart')) {
 	console.log(paramValue)
 
 
-	getMainChartOptions(7)
+	getMainChartOptions(7, paramValue)
 		.then(result=> {
 			const chart = new ApexCharts(document.getElementById('main-chart'), result);
 			chart.render();
 			// init again when toggling dark mode
 			document.addEventListener('dark-mode', function () {
-				getMainChartOptions(7).then(result2 => {
+				getMainChartOptions(7, paramValue).then(result2 => {
 					chart.updateOptions(result2);
 				})
 			});
 			document.getElementById('last7days').addEventListener('click', function() {
-				getMainChartOptions(7).then(result2 => {
+				getMainChartOptions(7, paramValue).then(result2 => {
 					chart.updateOptions(result2);
 				})
 				document.getElementById('daterangespan').textContent = "Last 7 days";
 
 			});
 			document.getElementById('last30days').addEventListener('click', function() {
-				getMainChartOptions(30).then(result2 => {
+				getMainChartOptions(30, paramValue).then(result2 => {
 					chart.updateOptions(result2);
 				})
 				document.getElementById('daterangespan').textContent = "Last 30 days";
 
 			});
 			document.getElementById('last90days').addEventListener('click', function() {
-				getMainChartOptions(90).then(result2 => {
+				getMainChartOptions(90, paramValue).then(result2 => {
 					chart.updateOptions(result2);
 				})
 				document.getElementById('daterangespan').textContent = "Last 90 days";

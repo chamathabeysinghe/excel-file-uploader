@@ -201,17 +201,25 @@ app.post('/crud/products', (req, res) => {
   });
 });
 
-// Function to get data for the last 7 or 30 days
-async function getRecordCounts(days) {
+// Function to get data for the last 7 or 30 days with optional userName filter
+async function getRecordCounts(days, userName = null) {
   const startDate = moment().subtract(days, 'days').startOf('day');
   const endDate = moment().endOf('day');
 
-  // Step 1: Get the aggregated record counts from the database
+  // Step 1: Build the match criteria
+  const matchCriteria = {
+    post_date: { $gte: startDate.toDate() }
+  };
+
+  if (userName) {
+    matchCriteria.name = userName;
+  }
+  console.log(matchCriteria)
+
+  // Step 2: Get the aggregated record counts from the database
   const recordCounts = await Record.aggregate([
     {
-      $match: {
-        post_date: { $gte: startDate.toDate() }
-      }
+      $match: matchCriteria
     },
     {
       $group: {
@@ -226,19 +234,19 @@ async function getRecordCounts(days) {
     }
   ]);
 
-  // Step 2: Generate a complete list of dates within the range
+  // Step 3: Generate a complete list of dates within the range
   const dateMap = new Map();
 
   for (let m = startDate.clone(); m.isBefore(endDate); m.add(1, 'days')) {
     dateMap.set(m.format('YYYY-MM-DD'), 0); // Initialize each date with 0
   }
 
-  // Step 3: Fill in the dateMap with actual counts from the aggregation
+  // Step 4: Fill in the dateMap with actual counts from the aggregation
   recordCounts.forEach(record => {
     dateMap.set(record._id, record.count);
   });
 
-  // Step 4: Convert the dateMap back to an array
+  // Step 5: Convert the dateMap back to an array
   const completeRecordCounts = Array.from(dateMap, ([date, count]) => ({
     date,
     count
@@ -247,11 +255,18 @@ async function getRecordCounts(days) {
   return completeRecordCounts;
 }
 
-app.get('/api/record-counts/:days', async (req, res) => {
+// Modified endpoint to handle optional userName
+app.get('/api/record-counts/:days/:userName?', async (req, res) => {
   const days = parseInt(req.params.days, 10);
-  const data = await getRecordCounts(days);
+  const userName = req.params.userName || null;
+  console.log(userName)
+  console.log(userName)
+  console.log(userName)
+  console.log(userName)
+  const data = await getRecordCounts(days, userName);
   res.json(data);
 });
+
 
 app.get("/crud/users", (req, res) => {
   const users = require("./data/users.json");
