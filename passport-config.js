@@ -7,13 +7,6 @@ function initialize(passport) {
       let user;
 
       // Check if the user is the default admin
-      console.log(username)
-      console.log(username)
-      console.log(username)
-      console.log(username)
-      console.log(username)
-      console.log(username)
-      console.log(username)
       if (username === 'admin@admin.com') {
         // Hardcoded default admin user
         const defaultAdmin = {
