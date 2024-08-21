@@ -79,11 +79,101 @@ app
   .set("view engine", "ejs")
   .set("views", path.join(__dirname, "/content"));
 
+async function getMonthlyStatistics() {
+  const currentMonthStart = moment().startOf('month').toDate();
+  const lastMonthStart = moment().subtract(1, 'month').startOf('month').toDate();
+  const lastMonthEnd = moment().subtract(1, 'month').endOf('month').toDate();
+
+  // Total number of unique post_date values (posts) this month
+  const currentMonthPosts = await Record.aggregate([
+    { $match: { post_date: { $gte: currentMonthStart } } },
+    { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$post_date" } } } },
+    { $count: "totalPosts" }
+  ]);
+
+  const lastMonthPosts = await Record.aggregate([
+    { $match: { post_date: { $gte: lastMonthStart, $lte: lastMonthEnd } } },
+    { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$post_date" } } } },
+    { $count: "totalPosts" }
+  ]);
+
+  // Total number of unique viewers (name) this month based on seen_time
+  const currentMonthViewers = await Record.aggregate([
+    { $match: { seen_time: { $gte: currentMonthStart } } },
+    { $group: { _id: "$name" } },
+    { $count: "totalViewers" }
+  ]);
+
+  const lastMonthViewers = await Record.aggregate([
+    { $match: { seen_time: { $gte: lastMonthStart, $lte: lastMonthEnd } } },
+    { $group: { _id: "$name" } },
+    { $count: "totalViewers" }
+  ]);
+
+  // Total number of records this month
+  const currentMonthRecords = await Record.countDocuments({ seen_time: { $gte: currentMonthStart } });
+
+  const lastMonthRecords = await Record.countDocuments({ seen_time: { $gte: lastMonthStart, $lte: lastMonthEnd } });
+
+  // Calculate percentage changes
+  const postPercentageChange = (lastMonthPosts[0] && lastMonthPosts[0].totalPosts > 0
+    ? ((currentMonthPosts[0]?.totalPosts || 0) - lastMonthPosts[0].totalPosts) / lastMonthPosts[0].totalPosts * 100
+    : currentMonthPosts[0]?.totalPosts > 0 ? 100 : 0).toFixed(2);
+
+  const viewerPercentageChange = (lastMonthViewers[0] && lastMonthViewers[0].totalViewers > 0
+    ? ((currentMonthViewers[0]?.totalViewers || 0) - lastMonthViewers[0].totalViewers) / lastMonthViewers[0].totalViewers * 100
+    : currentMonthViewers[0]?.totalViewers > 0 ? 100 : 0).toFixed(2);
+
+  const recordPercentageChange = (lastMonthRecords > 0
+    ? (currentMonthRecords - lastMonthRecords) / lastMonthRecords * 100
+    : currentMonthRecords > 0 ? 100 : 0).toFixed(2);
+
+  return {
+    totalPosts: currentMonthPosts[0]?.totalPosts || 0,
+    postPercentageChange,
+    totalViewers: currentMonthViewers[0]?.totalViewers || 0,
+    viewerPercentageChange,
+    totalRecords: currentMonthRecords,
+    recordPercentageChange,
+  };
+}
+
+app.use((req, res, next) => {
+  if (req.isAuthenticated()) {
+    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
+    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
+    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
+    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
+    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
+    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
+    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
+    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
+    res.locals.user = req.user;
+    res.locals.isAuthenticated = true;
+    // You can set other locals or perform actions for authenticated users here
+  } else {
+    res.locals.user = null;
+    res.locals.isAuthenticated = false;
+    // You can set other locals or perform actions for unauthenticated users here
+  }
+  res.locals.appName = 'My Awesome App';
+  next();
+});
+
 app.get("/", isAuthenticated, (req, res) => {
-  res.render("index", {
-    layout: path.join(__dirname, "/layouts/dashboard"),
-    footer: true,
-  });
+  getMonthlyStatistics().then(results => {
+    console.log('**********')
+    console.log('**********')
+    console.log('**********')
+    console.log('**********')
+    console.log(results)
+    res.render("index", {
+      stats: results,
+      layout: path.join(__dirname, "/layouts/dashboard"),
+      footer: true,
+    });
+  })
+
 });
 
 app.get("/settings", (req, res) => {
