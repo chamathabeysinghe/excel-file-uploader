@@ -140,14 +140,6 @@ async function getMonthlyStatistics() {
 
 app.use((req, res, next) => {
   if (req.isAuthenticated()) {
-    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
-    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
-    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
-    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
-    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
-    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
-    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
-    console.log(' slkdjflsd fjasldk jldkjfdlkfjdlkj')
     res.locals.user = req.user;
     res.locals.isAuthenticated = true;
     // You can set other locals or perform actions for authenticated users here
@@ -385,22 +377,34 @@ async function getRecordCounts(days, userName = null) {
 app.get('/api/record-counts/:days/:userName?', async (req, res) => {
   const days = parseInt(req.params.days, 10);
   const userName = req.params.userName || null;
-  console.log(userName)
-  console.log(userName)
-  console.log(userName)
-  console.log(userName)
   const data = await getRecordCounts(days, userName);
   res.json(data);
 });
 
 
-app.get("/crud/users", (req, res) => {
-  const users = require("./data/users.json");
+app.get("/crud/users", isAuthenticated, async (req, res) => {
+  // const users = require("./data/users.json");
+  const users = await User.find({});
   res.render("crud/users", {
     layout: path.join(__dirname, "/layouts/dashboard"),
     footer: false,
     users,
   });
+});
+app.get('/user-delete/:id', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      return res.status(404).redirect("back");
+    }
+
+    res.status(200).redirect("back");
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).redirect("back");
+  }
 });
 
 app.get("/layouts/stacked", (req, res) => {
