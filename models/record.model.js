@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const recordSchema = new mongoose.Schema({
+  filename: {
+    type: String,
+    required: true
+  },
   name: {
     type: String,
     required: true,

@@ -253,8 +253,31 @@ app.get("/authentication/reset-password", (req, res) => {
   });
 });
 
-app.get("/crud/products", (req, res) => {
-  const products = require("./data/products.json");
+
+async function findUniqueFilenamesAndCounts() {
+  try {
+    const result = await Record.aggregate([
+      {
+        $group: {
+          _id: "$filename", // Group by the filename field
+          count: { $sum: 1 } // Count the number of records per filename
+        }
+      },
+      {
+        $sort: { _id: 1 } // Optional: Sort results by filename (alphabetically)
+      }
+    ]);
+
+    return result;
+  } catch (err) {
+    console.error('Error finding unique filenames and counts:', err);
+    throw err; // Re-throw the error for further handling if needed
+  }
+}
+
+app.get("/crud/products", isAuthenticated, async (req, res) => {
+  const products = await findUniqueFilenamesAndCounts()
+  console.log(products)
   res.render("crud/products", {
     layout: path.join(__dirname, "/layouts/dashboard"),
     footer: false,
@@ -294,6 +317,7 @@ app.post('/crud/products', (req, res) => {
             var seenTime = parseDate(row.Time, postDate)
             console.log(seenTime)
             records.push({
+              filename: req.file.originalname,
               name: row.Name,
               post_date: postDate, // Assuming "Time" column contains dates
               seen_time: seenTime // Assuming you want to set the seen_time to the current date/time
