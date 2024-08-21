@@ -4,8 +4,17 @@ const path = require("path");
 const multer = require('multer');
 const csv = require('csv-parser');
 const Record = require('./models/record.model'); // Import the Record model
+const User = require('./models/user.model'); // Import the Record model
 const fs = require('fs');
+const session = require('express-session');
+
 const moment = require('moment'); // Import moment
+const passport = require('passport');
+const flash = require('connect-flash');
+const initializePassport = require('./passport-config');
+const isAuthenticated = require('./middleware/auth');
+
+
 
 const storage = multer.diskStorage({
   destination: './uploads/',
@@ -48,6 +57,18 @@ mongoose.connect(mongoURI, {
   .catch((err) => console.error('MongoDB connection error:', err));
 
 const app = express();
+initializePassport(passport);
+
+// Middleware
+app.use(express.urlencoded({ extended: false })); // To parse form data
+app.use(session({
+  secret: 'secret', // Replace with a strong secret in production
+  resave: false,
+  saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(flash());
 
 // Static Files
 app.use(express.static(path.join(__dirname, "/static")));
@@ -58,7 +79,7 @@ app
   .set("view engine", "ejs")
   .set("views", path.join(__dirname, "/content"));
 
-app.get("/", (req, res) => {
+app.get("/", isAuthenticated, (req, res) => {
   res.render("index", {
     layout: path.join(__dirname, "/layouts/dashboard"),
     footer: true,
@@ -93,6 +114,44 @@ app.get("/authentication/sign-in", (req, res) => {
     layout: path.join(__dirname, "/layouts/main"),
     navigation: false,
     footer: false,
+  });
+});
+
+// Route to handle login logic
+app.post('/authentication/sign-in', passport.authenticate('local', {
+  successRedirect: '/', // Redirect to dashboard or homepage on success
+  failureRedirect: '/authentication/sign-in', // Redirect back to login page on failure
+  failureFlash: true // Enable flash messages (requires connect-flash middleware)
+}));
+
+app.post('/add-user', async (req, res, next) => {
+  const { username, password, firstname, lastname } = req.body;
+
+  try {
+    // Create a new user
+    const user = new User({ username, password, full_name: firstname+" "+lastname });
+    await user.save();
+    return res.redirect("back")
+    // Authenticate the user using passport's login method
+    // req.login(user, (err) => {
+    //   if (err) {
+    //     return next(err);
+    //   }
+    //   // Redirect to the dashboard or another page after successful login
+    //   return res.redirect('/dashboard');
+    // });
+  } catch (err) {
+    res.status(500).send('Error creating user: ' + err.message);
+  }
+});
+
+// Logout route
+app.get('/logout', (req, res, next) => {
+  req.logout((err) => {
+    if (err) {
+      return next(err);
+    }
+    res.redirect('/authentication/sign-in'); // Redirect to the login page after logout
   });
 });
 
