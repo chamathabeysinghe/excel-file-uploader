@@ -83,12 +83,7 @@ async function getMainChartOptions(days, paramValue) {
 				name: 'Views',
 				data: counts,
 				color: '#1A56DB'
-			},
-			// {
-			// 	name: 'Revenue (previous period)',
-			// 	data: [6556, 6725, 6424, 6356, 6586, 6756, 6616],
-			// 	color: '#FDBA8C'
-			// }
+			}
 		],
 		markers: {
 			size: 5,
@@ -99,6 +94,7 @@ async function getMainChartOptions(days, paramValue) {
 			}
 		},
 		xaxis: {
+			type: 'datetime',
 			categories: labels,
 			labels: {
 				style: {
@@ -159,6 +155,7 @@ async function getMainChartOptions(days, paramValue) {
 			}
 		]
 	};
+
 }
 
 
