@@ -144,7 +144,7 @@ app.post('/crud/products', (req, res) => {
     }
 
     const filePath = `./uploads/${req.file.filename}`;
-    const records = [];
+    const operations = [];
     const [month, day, year] = req.file.originalname.split("-")[0].split("_");
     const postDate = new Date(`${year}-${month}-${day}`);
 
@@ -152,26 +152,38 @@ app.post('/crud/products', (req, res) => {
       .pipe(csv())
       .on('data', (row) => {
         const seenTime = parseDate(row.Time, postDate);
-        records.push({
+
+        const record = {
           filename: req.file.originalname,
           name: row.Name,
           post_date: postDate,
           seen_time: seenTime,
+        };
+
+        // Add an upsert operation to the bulkWrite array
+        operations.push({
+          updateOne: {
+            filter: { post_date: record.post_date, name: record.name }, // Matching condition
+            update: { $set: record }, // Data to update
+            upsert: true // If not found, insert the new document
+          }
         });
       })
       .on('end', async () => {
         try {
-          await Record.insertMany(records);
-          console.log('CSV file successfully processed and records inserted into the database');
-          fs.unlinkSync(filePath);
+          // Perform bulkWrite with upserts
+          await Record.bulkWrite(operations);
+          console.log('CSV file successfully processed and records upserted into the database');
+          fs.unlinkSync(filePath); // Clean up the file after processing
           res.redirect("back");
         } catch (err) {
-          console.error('Error inserting records:', err);
+          console.error('Error upserting records:', err);
           res.redirect("back");
         }
       });
   });
 });
+
 
 app.get('/crud/users', isAuthenticated, async (req, res) => {
   const users = await User.find({});

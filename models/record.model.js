@@ -19,5 +19,8 @@ const recordSchema = new mongoose.Schema({
   },
 });
 
+// Create a compound index to enforce uniqueness on post_date and name
+recordSchema.index({ post_date: 1, name: 1 }, { unique: true });
+
 const Record = mongoose.model('Record', recordSchema);
 module.exports = Record;
